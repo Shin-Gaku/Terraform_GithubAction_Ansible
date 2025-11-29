@@ -10,4 +10,4 @@
 　・・プルリクエストをトリガーにCIが起動して、Checkout、fmt、
 　　　Configure AWS Credential、init、validateとplanを実行　　　　
 　・・マージをトリガーにCDが起動して、Checkout、fmt、
-　　　Configure AWS Credential、init、validateとapplyを実行>
+　　　Configure AWS Credential、init、validateとapplyを実行

@@ -46,3 +46,10 @@ variable "notification_email" {
   default     = "yakushin-co.ltd@gol.com"
   sensitive   = true
 }
+
+# Github Actions runner SSHアクセスIPアドレス 20251201
+variable "ssh_GHArunner_ip" {
+  description = "github actions runner IPアドレス"
+  type        = string
+  default     = "192.168.2.50/32"
+}

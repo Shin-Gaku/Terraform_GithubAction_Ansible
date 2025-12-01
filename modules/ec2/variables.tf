@@ -39,3 +39,9 @@ variable "alb_sg_id" {
   description = "Security Group ID of the ALB which can access to EC2"
   type        = string
 }
+
+# Github Actions runner SSHアクセスIPアドレス
+variable "ssh_GHArunner_ip" {
+  description = "github actions runner IPアドレス"
+  type        = string
+}

@@ -54,7 +54,6 @@ jobs:
   ansible:
     needs: [terraform_CD]
     runs-on: ubuntu-latest
-    #applyジョブは承認必須
     environment: production
     steps:
       # GitHubリポジトリをチェックアウト

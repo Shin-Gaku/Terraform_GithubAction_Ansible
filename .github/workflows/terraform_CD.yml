@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - sourceini
-      #- test
+      - test
     paths:
       - "*.tf"
       - "*.tftest.hcl"
@@ -29,7 +29,6 @@ jobs:
   terraform_CD:
     name: Terraform_CD
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -51,10 +50,86 @@ jobs:
       - name: Terraform validate
         run: |
           terraform validate -no-color
-      - name: Terraform apply
-        id: apply
+  
+  ansible:
+    needs: [terraform_CD]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      # GitHubリポジトリをチェックアウト
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      
+      # AWS認証（S3バックエンドにアクセスするため）
+      - name: Configure AWS Credential
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_IAM_ROLE_ARN }}
+
+      # Terraformセットアップ
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v3
+      
+      # runnerのIP取得
+      - name: Get runner public IP
+        id: runner_ip
+        run: echo "RUNNER_IP=$(curl -s ifconfig.me)" >> $GITHUB_ENV
+      
+      # 取得したrunnerのIP表示
+      - name: Echo runner IP
+        run: echo "runner IP is ${{ env.RUNNER_IP }}"
+
+      # Terraform Initは必要
+      - name: Terraform init
         run: |
-          terraform apply \
-            -input=false \
-            -no-color \
-            -auto-approve
+          terraform init -no-color
+      
+      # GHA runnerをSSH SecurityGroupに追加
+      - name: Ensure GHA runner to connect EC2 with SSH
+        run: |
+          #cd ../
+          terraform apply -auto-approve \
+            -var "ssh_GHArunner_ip=${{ env.RUNNER_IP }}/32"
+      
+      # Terraformの出力からEC2のIPを取得
+      - name: Get EC2 public IP from Terraform output
+        id: get_ip
+        run: |
+          terraform init -reconfigure
+          echo "EC2_IP=$(terraform output -raw ec2_public_ip)" >> $GITHUB_ENV
+      
+      # 取得したEC2のIP表示
+      - name: Echo EC2 IP
+        run: echo "EC2 IP is ${{ env.EC2_IP }}"
+      
+      # Ansibleインストール
+      - name: Install Ansible
+        run: |
+          sudo apt update -y
+          sudo apt install -y ansible
+
+      # SSH秘密鍵設定
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY_EC2 }}" > ~/.ssh/aws-study_20251010.pem
+          chmod 600 ~/.ssh/aws-study_20251010.pem
+
+      # 動的インベントリ作成（最新IP使用）
+      - name: Create Inventory File
+        working-directory: ./ansible
+        run: |
+          echo "[ec2]" > inventory.ini
+          echo "${{ env.EC2_IP }}" >> inventory.ini
+
+      # Ansible Playbook 実行
+      - name: Run Ansible Playbook
+        working-directory: ./ansible
+        run: |
+          ansible-playbook \
+            -i inventory.ini \
+            playbook.yml \
+            -u ec2-user \
+            --private-key ~/.ssh/aws-study_20251010.pem \
+            --ssh-extra-args='-o StrictHostKeyChecking=no'

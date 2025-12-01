@@ -70,15 +70,15 @@ module "aws-study-vpc" {
 # EC2インスタンス (モジュールから呼び出す)
 # ---------------------------------------------
 module "ec2Instance" {
-  source        = "./modules/ec2"
-  instance_type = var.ec2_type
-  key_name      = var.key_name
-  ssh_fixed_ip  = var.ssh_fixed_ip
-  subnet_id     = module.aws-study-vpc.public_subnets_ids[0]
-  vpc_id        = module.aws-study-vpc.vpc_id
-  alb_sg_id     = module.alb.alb_sg_id
+  source           = "./modules/ec2"
+  instance_type    = var.ec2_type
+  key_name         = var.key_name
+  ssh_fixed_ip     = var.ssh_fixed_ip
+  subnet_id        = module.aws-study-vpc.public_subnets_ids[0]
+  vpc_id           = module.aws-study-vpc.vpc_id
+  alb_sg_id        = module.alb.alb_sg_id
   ssh_GHArunner_ip = var.ssh_GHArunner_ip
-  modules_name  = "aws-study"
+  modules_name     = "aws-study"
 }
 
 # ---------------------------------------------
